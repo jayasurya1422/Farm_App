@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, Alert, TouchableOpacity } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import { useRouter } from 'expo-router';
+import tw from 'twrnc';
+import { firestore, auth } from '../config/firebaseConfig'; // Import Firebase configuration
+import { collection, addDoc } from 'firebase/firestore'; // Import Firestore methods
 
 const RegisterScreen = () => {
   const [userType, setUserType] = useState('farmer'); // Default user type
@@ -10,7 +13,7 @@ const RegisterScreen = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (email === '' || password === '' || confirmPassword === '') {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
@@ -20,40 +23,50 @@ const RegisterScreen = () => {
       return;
     }
 
-    // Add your registration logic here
-    Alert.alert('Success', 'Registration Successful');
+    try {
+      // Add user data to Firestore
+      await addDoc(collection(firestore, 'User-data'), {
+        email,
+        password, // Note: Storing passwords in plaintext is a security risk. Use authentication methods to handle passwords.
+        role: userType.charAt(0).toUpperCase() + userType.slice(1),
+      });
 
-    // Navigate to the login screen after successful registration
-    router.push('/screens/Login');
+      Alert.alert('Success', 'Registration Successful');
+
+      // Navigate to the login screen after successful registration
+      router.push('/screens/Login');
+    } catch (error) {
+      Alert.alert('Error', `Registration failed: ${error.message}`);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+    <View style={tw`flex-1 justify-center p-4 bg-blue-50`}>
+      <Text style={tw`text-2xl font-bold mb-6 text-center text-gray-800`}>Register</Text>
 
       {/* Toggle Buttons */}
-      <View style={styles.toggleContainer}>
+      <View style={tw`flex-row justify-center mb-6`}>
         <TouchableOpacity
-          style={[styles.toggleButton, userType === 'farmer' && styles.activeButton]}
+          style={tw`px-5 py-4 mx-2 rounded-full border-4 border-blue-200 bg-white shadow ${userType === 'farmer' ? 'bg-blue-200' : ''}`}
           onPress={() => setUserType('farmer')}
         >
-          <Text style={styles.toggleText}>Farmer</Text>
+          <Text style={tw`text-base text-gray-800`}>Farmer</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.toggleButton, userType === 'retailer' && styles.activeButton]}
+          style={tw`px-5 py-4 mx-2 rounded-full border-4 border-blue-200 bg-white shadow ${userType === 'retailer' ? 'bg-blue-200' : ''}`}
           onPress={() => setUserType('retailer')}
         >
-          <Text style={styles.toggleText}>Retailer</Text>
+          <Text style={tw`text-base text-gray-800`}>Retailer</Text>
         </TouchableOpacity>
       </View>
 
       {/* Conditional Form Rendering */}
-      <View style={styles.formContainer}>
+      <View style={tw`mt-4 p-5 rounded-lg bg-white shadow-lg`}>
         <TextInput
           label="Email"
           value={email}
           onChangeText={setEmail}
-          style={styles.input}
+          style={tw`mb-4 bg-white`}
           keyboardType="email-address"
           autoCompleteType="email"
           textContentType="emailAddress"
@@ -63,7 +76,7 @@ const RegisterScreen = () => {
           label="Password"
           value={password}
           onChangeText={setPassword}
-          style={styles.input}
+          style={tw`mb-4 bg-white`}
           secureTextEntry
           autoCompleteType="password"
           textContentType="password"
@@ -73,114 +86,33 @@ const RegisterScreen = () => {
           label="Confirm Password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          style={styles.input}
+          style={tw`mb-4 bg-white`}
           secureTextEntry
           autoCompleteType="password"
           textContentType="password"
           mode="outlined"
         />
-        <Text style={styles.roleText}>Role: {userType.charAt(0).toUpperCase() + userType.slice(1)}</Text>
-        <TouchableOpacity onPress={handleRegister} style={styles.registerButton}>
-          <Text style={styles.registerButtonText}>Register</Text>
-        </TouchableOpacity>
+        <Text style={tw`text-lg my-3 text-center text-gray-800`}>
+          Role: {userType.charAt(0).toUpperCase() + userType.slice(1)}
+        </Text>
+
+        {/* Register Button Centered */}
+        <View style={tw`items-center`}>
+          <TouchableOpacity onPress={handleRegister} style={tw`w-full mt-5 p-4 rounded bg-blue-500`}>
+            <Text style={tw`text-white text-lg font-bold text-center`}>Register</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <View style={styles.loginLinkContainer}>
-        <Text style={styles.loginText}>Already have an account? </Text>
+      {/* Account Link Centered */}
+      <View style={tw`mt-5 flex-row justify-center`}>
+        <Text style={tw`text-gray-800 text-lg`}>Already have an account? </Text>
         <TouchableOpacity onPress={() => router.push('/screens/Login')}>
-          <Text style={styles.loginLink}>Go to Login</Text>
+          <Text style={tw`text-blue-500 underline font-bold text-lg`}>Go to Login</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#f0f8ff', // Light color background
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    textAlign: 'center',
-    color: '#333',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  toggleButton: {
-    padding: 12,
-    margin: 5,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#b0c4de', // Light color border
-    backgroundColor: '#ffffff', // Light background color
-    elevation: 3, // Shadow effect for Android
-    shadowColor: '#000', // Shadow effect for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  activeButton: {
-    backgroundColor: '#b0c4de', // Light blue background for active button
-  },
-  toggleText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  formContainer: {
-    marginTop: 16,
-    padding: 20,
-    borderRadius: 10,
-    backgroundColor: '#ffffff', // Light color background
-    shadowColor: '#000', // Shadow effect for iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5, // Shadow effect for Android
-  },
-  roleText: {
-    fontSize: 18,
-    marginVertical: 12,
-    textAlign: 'center',
-    color: '#333',
-  },
-  input: {
-    marginBottom: 16,
-  },
-  registerButton: {
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 5,
-    backgroundColor: '#4a90e2', // Light blue background for register button
-    alignItems: 'center',
-  },
-  registerButtonText: {
-    color: '#ffffff', // White text color for the button
-    fontSize: 18, // Increased font size
-    fontWeight: 'bold',
-  },
-  loginLinkContainer: {
-    marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  loginText: {
-    color: '#333',
-    fontSize: 20,
-  },
-  loginLink: {
-    color: '#4a90e2', // Light blue color for link
-    textDecorationLine: 'underline',
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-});
 
 export default RegisterScreen;
