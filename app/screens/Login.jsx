@@ -24,7 +24,7 @@ const LoginScreen = () => {
         collection(firestore, 'User-data'),
         where('email', '==', email),
         where('password', '==', password),
-        where('role', '==', role.charAt(0).toUpperCase() + role.slice(1))
+        where('role', '==', role.charAt(0).toUpperCase() + role.slice(1)) // Capitalize first letter of role
       );
 
       const querySnapshot = await getDocs(q);
@@ -32,8 +32,11 @@ const LoginScreen = () => {
       if (!querySnapshot.empty) {
         // User exists
         Alert.alert('Success', 'Login Successful');
-        // Navigate to home screen (you will change this to the actual home page later)
-        router.push('/screens/Register'); // Redirect to register page or home page
+        // Navigate to ProductList screen with email as a parameter
+        router.push({
+          pathname: '/screens/ProductList',
+          params: { email } // Pass email to ProductList
+        });
       } else {
         // User does not exist
         Alert.alert('Error', 'Invalid credentials. Please check your email, password, and role.');
@@ -44,7 +47,7 @@ const LoginScreen = () => {
   };
 
   const handleRegister = () => {
-    router.push('/screens/Register');
+    router.push('/Register'); // Ensure this route matches your routing setup
   };
 
   return (
